@@ -63,7 +63,8 @@ MESSAGES = {
         "profile": "👑 پروفایل شما {name} عزیز:\n💎 زبان: {lang}\n💎 عضویت: {join_date}\n💎 وضعیت: همیشه در اوج!",
         "vipcode_success": "🎉 تبریک! شما حالا عضو VIP هستید! منوی ویژه براتون باز شد!",
         "vipcode_fail": "✨ کد VIP اشتباه بود! لطفاً دوباره تلاش کنید یا با مبین تماس بگیرید!",
-        "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}"
+        "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}",
+        "menu_list": "📋 فهرست امکانات ربات:\n\n1. ثبت سفارش سایت\n2. مشاوره کسب‌وکار\n3. تماس با مبین\n4. تارنما\n5. شبکه‌های اجتماعی\n6. قابلیت جدید\n7. تقویم\n8. نکته روزانه" + "\n9. خدمات VIP" * "{vip_status}"
     },
     "en": {
         "welcome": "💎 Hello {name}, welcome to Mobin Khojasteh Boroumand's smart bot! 👑\n\nYou’re now part of my exclusive world. Ready?\n\nPlease select your language:",
@@ -82,7 +83,8 @@ MESSAGES = {
         "profile": "👑 Your profile, dear {name}:\n💎 Language: {lang}\n💎 Joined: {join_date}\n💎 Status: Always at the top!",
         "vipcode_success": "🎉 Congrats! You’re now a VIP! Exclusive menu unlocked!",
         "vipcode_fail": "✨ Wrong VIP code! Please try again or contact Mobin!",
-        "stats": "📊 Bot stats for {name}:\nVisits: {users}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}"
+        "stats": "📊 Bot stats for {name}:\nVisits: {users}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}",
+        "menu_list": "📋 Bot Features List:\n\n1. Order Website\n2. Business Consultation\n3. Contact Mobin\n4. Websites\n5. Social Media\n6. New Feature\n7. Calendar\n8. Daily Tip" + "\n9. VIP Services" * "{vip_status}"
     }
 }
 
@@ -188,6 +190,22 @@ async def start(update: Update, context) -> None:
     welcome_message = translate_message("welcome", "fa", name=user_name)
     await update.message.reply_text(format_message(welcome_message), reply_markup=reply_markup)
 
+async def menu(update: Update, context) -> None:
+    user_id = str(update.message.from_user.id)
+    users = load_users()
+    user_data = users.get(user_id, {"lang": "fa", "join_date": "22 March 2025", "vip": False, "last_tip_date": ""})
+    user_lang = user_data["lang"]
+    
+    # فهرست گزینه‌ها با بررسی وضعیت VIP
+    vip_status = 1 if user_data["vip"] else 0
+    message = translate_message("menu_list", user_lang, vip_status=vip_status)
+    
+    # دکمه بازگشت
+    keyboard = [[InlineKeyboardButton("🔙 بازگشت به منو" if user_lang == "fa" else "🔙 Back to Menu", callback_data="menu")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(format_message(message), reply_markup=reply_markup)
+
 async def interactive_response(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
     users = load_users()
@@ -292,6 +310,7 @@ def main() -> None:
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("profile", profile))
     application.add_handler(CommandHandler("vipcode", vipcode))
+    application.add_handler(CommandHandler("menu", menu))  # اضافه کردن دستور /menu
     application.add_handler(CallbackQueryHandler(button))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, interactive_response))
     
@@ -299,3 +318,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    
