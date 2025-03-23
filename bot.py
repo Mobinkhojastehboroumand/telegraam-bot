@@ -63,7 +63,7 @@ MESSAGES = {
         "profile": "👑 پروفایل شما {name} عزیز:\n💎 زبان: {lang}\n💎 عضویت: {join_date}\n💎 وضعیت: همیشه در اوج!",
         "vipcode_success": "🎉 تبریک! شما حالا عضو VIP هستید! منوی ویژه براتون باز شد!",
         "vipcode_fail": "✨ کد VIP اشتباه بود! لطفاً دوباره تلاش کنید یا با مبین تماس بگیرید!",
-        "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}",
+        "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکاربران:\n{user_list}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}",
         "menu_list": "📋 فهرست امکانات ربات:\n\n1. ثبت سفارش سایت\n2. مشاوره کسب‌وکار\n3. تماس با مبین\n4. تارنما\n5. شبکه‌های اجتماعی\n6. قابلیت جدید\n7. تقویم\n8. نکته روزانه"
     },
     "en": {
@@ -83,7 +83,7 @@ MESSAGES = {
         "profile": "👑 Your profile, dear {name}:\n💎 Language: {lang}\n💎 Joined: {join_date}\n💎 Status: Always at the top!",
         "vipcode_success": "🎉 Congrats! You’re now a VIP! Exclusive menu unlocked!",
         "vipcode_fail": "✨ Wrong VIP code! Please try again or contact Mobin!",
-        "stats": "📊 Bot stats for {name}:\nVisits: {users}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}",
+        "stats": "📊 Bot stats for {name}:\nVisits: {users}\nUsers:\n{user_list}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}",
         "menu_list": "📋 Bot Features List:\n\n1. Order Website\n2. Business Consultation\n3. Contact Mobin\n4. Websites\n5. Social Media\n6. New Feature\n7. Calendar\n8. Daily Tip"
     }
 }
@@ -120,7 +120,7 @@ def save_users(users):
     with open(USERS_FILE, "w") as f:
         json.dump(users, f, ensure_ascii=False)
 
-def update_stats(option=None):
+def update_stats(option=None, username=None):
     if not os.path.exists(STATS_FILE):
         with open(STATS_FILE, "w") as f:
             f.write("Users: 0\nOption1: 0\nOption2: 0\nOption3: 0\nOption4: 0\nOption5: 0\nOption6: 0\nVIPs: 0\n")
@@ -131,7 +131,7 @@ def update_stats(option=None):
             stats[key] = int(value)
     if option:
         stats[option] += 1
-    else:
+    elif username:  # فقط وقتی کاربر جدید باشه
         stats["Users"] += 1
     with open(STATS_FILE, "w") as f:
         for key, value in stats.items():
@@ -145,10 +145,19 @@ async def stats(update: Update, context) -> None:
         await update.message.reply_text(format_message("✨ فقط ادمین می‌تونه آمار رو ببینه! 👑"))
         return
     stats = update_stats()
+    users = load_users()
+    
+    # لیست یوزرنیم‌ها
+    user_list = "\n".join([f"- @{data['username']}" for user_id, data in users.items() if 'username' in data])
+    if not user_list:
+        user_list = "هیچ کاربری ثبت نشده"
+    
     message = translate_message("stats", "fa", name=ADMIN_ID, 
-                               users=stats["Users"], option1=stats["Option1"], option2=stats["Option2"],
-                               option3=stats["Option3"], option4=stats["Option4"], option5=stats["Option5"],
-                               option6=stats["Option6"], vips=stats["VIPs"])
+                               users=stats["Users"], user_list=user_list, 
+                               option1=stats["Option1"], option2=stats["Option2"],
+                               option3=stats["Option3"], option4=stats["Option4"], 
+                               option5=stats["Option5"], option6=stats["Option6"], 
+                               vips=stats["VIPs"])
     await update.message.reply_text(format_message(message), parse_mode="Markdown")
 
 async def profile(update: Update, context) -> None:
@@ -177,11 +186,18 @@ async def vipcode(update: Update, context) -> None:
 async def start(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
     user_name = update.message.from_user.first_name
+    username = update.message.from_user.username
     users = load_users()
     if user_id not in users:
-        users[user_id] = {"lang": "fa", "join_date": datetime.now().strftime("%d %B %Y"), "vip": False, "last_tip_date": ""}
-    save_users(users)
-    update_stats()
+        users[user_id] = {
+            "lang": "fa", 
+            "join_date": datetime.now().strftime("%d %B %Y"), 
+            "vip": False, 
+            "last_tip_date": "",
+            "username": username if username else "بدون یوزرنیم"
+        }
+        save_users(users)
+        update_stats(username=username)  # فقط وقتی کاربر جدیده
 
     keyboard = [
         [InlineKeyboardButton("فارسی 🇮🇷", callback_data="lang_fa"), InlineKeyboardButton("English 🇬🇧", callback_data="lang_en")]
