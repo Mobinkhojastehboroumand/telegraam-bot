@@ -1,23 +1,20 @@
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-from google_trans_new import google_translator, LANGUAGES
 import os
 import json
 from datetime import datetime
 import random
 
-# فعال کردن لاگ
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# لاگ فقط برای خطاها
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # تنظیمات اولیه
 TOKEN = "7964544115:AAGIbjFICKrlNy2zAdWhM32hsSg6k2exOtA"
 ADMIN_ID = "@Mobinkhojastehboroumand"
 STATS_FILE = "bot_stats.txt"
 USERS_FILE = "users.json"
-
-translator = google_translator()
 
 # پیام‌ها و داده‌ها
 BUSINESS_TIPS = {
@@ -100,22 +97,10 @@ MENU_BUTTONS = {
 }
 
 # توابع کمکی
-def translate_text(text, lang, fallback_lang="fa"):
-    if lang in ["fa", "en"]:
-        return text
-    try:
-        return translator.translate(text, lang_tgt=lang)
-    except Exception:
-        return text
-
 def translate_message(message_key, lang, name="", **kwargs):
     if lang in MESSAGES:
         return MESSAGES[lang][message_key].format(name=name, **kwargs)
-    base_text = MESSAGES["fa"][message_key].format(name=name, **kwargs)
-    try:
-        return translator.translate(base_text, lang_tgt=lang)
-    except Exception:
-        return translate_message("error", lang)
+    return MESSAGES["fa"][message_key].format(name=name, **kwargs)  # پیش‌فرض فارسی
 
 def format_message(text):
     return f"✨✨✨✨✨✨✨\n|    {text}    |\n✨✨✨✨✨✨✨"
@@ -161,7 +146,7 @@ async def profile(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
     users = load_users()
     user_data = users.get(user_id, {"lang": "fa", "join_date": "22 March 2025", "vip": False})
-    lang_name = LANGUAGES.get(user_data["lang"], user_data["lang"]).capitalize()
+    lang_name = "فارسی" if user_data["lang"] == "fa" else "English"
     message = translate_message("profile", user_data["lang"], name=update.message.from_user.first_name,
                                 lang=lang_name, join_date=user_data["join_date"])
     await update.message.reply_text(format_message(message))
@@ -302,5 +287,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
- 
-
