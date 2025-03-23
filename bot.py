@@ -5,6 +5,7 @@ import os
 import json
 from datetime import datetime
 import random
+import jdatetime
 
 # لاگ فقط برای خطاها
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.ERROR)
@@ -55,13 +56,14 @@ MESSAGES = {
         "option5": "👑 صفحات رسمی مبین:\nاینستاگرام: https://instagram.com/mobin.khojaste.original\nآپارات: https://aparat.com/Mobinkhojastehboroumand\nویراستی: https://virasty.com/Mobinkhojastehboroumand\nتلگرام: https://t.me/Mobinkhojasteh\nیوتیوب: https://youtube.com/@mobinkhojastehboroumand\nایکس: https://x.com/Mobinkhojastehb?s=09",
         "option6": "💎 این قابلیت به‌زودی با شکوه اضافه می‌شود! 😉",
         "option_vip": "👑 خدمات VIP فقط برای اعضای ویژه:\nلطفاً با مبین تماس بگیرید!",
-        "option_calendar": "📅 تقویم امروز:\nتاریخ: {date}\n✨ امروز روز موفقیت شماست!",
+        "option_calendar": "📅 تقویم امروز:\nتاریخ میلادی: {gregorian_date} ({gregorian_day})\nتاریخ ایرانی: {jalali_date} ({jalali_day})\n✨ امروز روز موفقیت شماست!",
         "option_tip": "{tip}",
         "interactive": "💎 درود! چطور می‌تونم به شما خدمت کنم؟ سوال دارید یا از منو انتخاب کنید!",
         "error": "✨ اوه! یه خطای کوچک پیش اومد، لطفاً کمی صبر کنید یا دوباره تلاش کنید!",
         "profile": "👑 پروفایل شما {name} عزیز:\n💎 زبان: {lang}\n💎 عضویت: {join_date}\n💎 وضعیت: همیشه در اوج!",
         "vipcode_success": "🎉 تبریک! شما حالا عضو VIP هستید! منوی ویژه براتون باز شد!",
-        "vipcode_fail": "✨ کد VIP اشتباه بود! لطفاً دوباره تلاش کنید یا با مبین تماس بگیرید!"
+        "vipcode_fail": "✨ کد VIP اشتباه بود! لطفاً دوباره تلاش کنید یا با مبین تماس بگیرید!",
+        "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}"
     },
     "en": {
         "welcome": "💎 Hello {name}, welcome to Mobin Khojasteh Boroumand's smart bot! 👑\n\nYou’re now part of my exclusive world. Ready?\n\nPlease select your language:",
@@ -73,25 +75,26 @@ MESSAGES = {
         "option5": "👑 Mobin’s official pages:\nInstagram: https://instagram.com/mobin.khojaste.original\nAparat: https://aparat.com/Mobinkhojastehboroumand\nVirasty: https://virasty.com/Mobinkhojastehboroumand\nTelegram: https://t.me/Mobinkhojasteh\nYouTube: https://youtube.com/@mobinkhojastehboroumand\nX: https://x.com/Mobinkhojastehb?s=09",
         "option6": "💎 This feature will soon shine brightly! 😉",
         "option_vip": "👑 VIP services for exclusive members:\nPlease contact Mobin!",
-        "option_calendar": "📅 Today’s calendar:\nDate: {date}\n✨ Today is your day to shine!",
+        "option_calendar": "📅 Today’s calendar:\nGregorian Date: {gregorian_date} ({gregorian_day})\nJalali Date: {jalali_date} ({jalali_day})\n✨ Today is your day to shine!",
         "option_tip": "{tip}",
         "interactive": "💎 Hello! How may I serve you? Ask me or choose from the menu!",
         "error": "✨ Oops! A slight glitch occurred, please wait or try again!",
         "profile": "👑 Your profile, dear {name}:\n💎 Language: {lang}\n💎 Joined: {join_date}\n💎 Status: Always at the top!",
         "vipcode_success": "🎉 Congrats! You’re now a VIP! Exclusive menu unlocked!",
-        "vipcode_fail": "✨ Wrong VIP code! Please try again or contact Mobin!"
+        "vipcode_fail": "✨ Wrong VIP code! Please try again or contact Mobin!",
+        "stats": "📊 Bot stats for {name}:\nVisits: {users}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}"
     }
 }
 
 MENU_BUTTONS = {
     "fa": [
         "💎 ثبت سفارش سایت", "✨ مشاوره کسب‌وکار", "👑 تماس با مبین",
-        "🌐 تارنما", "📱 شبکه‌های اجتماعی", "🤖 چت GPT",
+        "🌐 تارنما", "📱 شبکه‌های اجتماعی", "💎 قابلیت جدید",
         "📅 تقویم", "💡 نکته روزانه"
     ],
     "en": [
         "💎 Order Website", "✨ Business Consultation", "👑 Contact Mobin",
-        "🌐 Websites", "📱 Social Media", "🤖 Chat GPT",
+        "🌐 Websites", "📱 Social Media", "💎 New Feature",
         "📅 Calendar", "💡 Daily Tip"
     ]
 }
@@ -131,6 +134,7 @@ def update_stats(option=None):
     with open(STATS_FILE, "w") as f:
         for key, value in stats.items():
             f.write(f"{key}: {value}\n")
+    return stats
 
 # دستورات ربات
 async def stats(update: Update, context) -> None:
@@ -138,9 +142,12 @@ async def stats(update: Update, context) -> None:
     if user != ADMIN_ID.replace("@", ""):
         await update.message.reply_text(format_message("✨ فقط ادمین می‌تونه آمار رو ببینه! 👑"))
         return
-    with open(STATS_FILE, "r") as f:
-        stats_text = f.read()
-    await update.message.reply_text(format_message(f"📊 آمار ربات:\n\n{stats_text}"), parse_mode="Markdown")
+    stats = update_stats()
+    message = translate_message("stats", "fa", name=ADMIN_ID, 
+                               users=stats["Users"], option1=stats["Option1"], option2=stats["Option2"],
+                               option3=stats["Option3"], option4=stats["Option4"], option5=stats["Option5"],
+                               option6=stats["Option6"], vips=stats["VIPs"])
+    await update.message.reply_text(format_message(message), parse_mode="Markdown")
 
 async def profile(update: Update, context) -> None:
     user_id = str(update.message.from_user.id)
@@ -257,8 +264,13 @@ async def button(update: Update, context) -> None:
     elif query.data == "option_vip":
         message = translate_message("option_vip", user_lang)
     elif query.data == "option_calendar":
-        today = datetime.now().strftime("%d %B %Y")
-        message = translate_message("option_calendar", user_lang, date=today)
+        gregorian_date = datetime.now().strftime("%d %B %Y")
+        gregorian_day = datetime.now().strftime("%A")
+        jalali_date = jdatetime.datetime.now().strftime("%Y-%m-%d")
+        jalali_day = jdatetime.datetime.now().strftime("%A")
+        message = translate_message("option_calendar", user_lang, 
+                                   gregorian_date=gregorian_date, gregorian_day=gregorian_day,
+                                   jalali_date=jalali_date, jalali_day=jalali_day)
     elif query.data == "option_tip":
         today = datetime.now().strftime("%Y-%m-%d")
         if user_data["last_tip_date"] != today:
