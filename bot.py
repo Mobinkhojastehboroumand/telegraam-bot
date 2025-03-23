@@ -64,7 +64,8 @@ MESSAGES = {
         "vipcode_success": "🎉 تبریک! شما حالا عضو VIP هستید! منوی ویژه براتون باز شد!",
         "vipcode_fail": "✨ کد VIP اشتباه بود! لطفاً دوباره تلاش کنید یا با مبین تماس بگیرید!",
         "stats": "📊 آمار ربات برای {name}:\nبازدیدها: {users}\nکاربران:\n{user_list}\nکلیک‌ها:\n - ثبت سفارش سایت: {option1}\n - مشاوره کسب‌وکار: {option2}\n - تماس با مبین: {option3}\n - تارنما: {option4}\n - شبکه‌های اجتماعی: {option5}\n - قابلیت جدید: {option6}\nاعضای VIP: {vips}",
-        "menu_list": "📋 فهرست امکانات ربات:\n\n1. ثبت سفارش سایت\n2. مشاوره کسب‌وکار\n3. تماس با مبین\n4. تارنما\n5. شبکه‌های اجتماعی\n6. قابلیت جدید\n7. تقویم\n8. نکته روزانه"
+        "menu_list": "📋 فهرست امکانات ربات:\n\n1. ثبت سفارش سایت\n2. مشاوره کسب‌وکار\n3. تماس با مبین\n4. تارنما\n5. شبکه‌های اجتماعی\n6. قابلیت جدید\n7. تقویم\n8. نکته روزانه",
+        "stats_denied": "✨ فقط مبین خجسته برومند می‌تونه آمار رو ببینه! 👑"
     },
     "en": {
         "welcome": "💎 Hello {name}, welcome to Mobin Khojasteh Boroumand's smart bot! 👑\n\nYou’re now part of my exclusive world. Ready?\n\nPlease select your language:",
@@ -84,7 +85,8 @@ MESSAGES = {
         "vipcode_success": "🎉 Congrats! You’re now a VIP! Exclusive menu unlocked!",
         "vipcode_fail": "✨ Wrong VIP code! Please try again or contact Mobin!",
         "stats": "📊 Bot stats for {name}:\nVisits: {users}\nUsers:\n{user_list}\nClicks:\n - Order Website: {option1}\n - Business Consultation: {option2}\n - Contact Mobin: {option3}\n - Websites: {option4}\n - Social Media: {option5}\n - New Feature: {option6}\nVIP Members: {vips}",
-        "menu_list": "📋 Bot Features List:\n\n1. Order Website\n2. Business Consultation\n3. Contact Mobin\n4. Websites\n5. Social Media\n6. New Feature\n7. Calendar\n8. Daily Tip"
+        "menu_list": "📋 Bot Features List:\n\n1. Order Website\n2. Business Consultation\n3. Contact Mobin\n4. Websites\n5. Social Media\n6. New Feature\n7. Calendar\n8. Daily Tip",
+        "stats_denied": "✨ Only Mobin Khojasteh Boroumand can view the stats! 👑"
     }
 }
 
@@ -141,14 +143,16 @@ def update_stats(option=None, username=None):
 # دستورات ربات
 async def stats(update: Update, context) -> None:
     user = update.message.from_user.username
+    user_id = str(update.message.from_user.id)
     if user != ADMIN_ID.replace("@", ""):
-        await update.message.reply_text(format_message("✨ فقط ادمین می‌تونه آمار رو ببینه! 👑"))
+        await update.message.reply_text(format_message(translate_message("stats_denied", "fa")))
         return
+    
     stats = update_stats()
     users = load_users()
     
     # لیست یوزرنیم‌ها
-    user_list = "\n".join([f"- @{data['username']}" for user_id, data in users.items() if 'username' in data])
+    user_list = "\n".join([f"- @{data['username']}" for user_id, data in users.items() if 'username' in data and data['username'] != "بدون یوزرنیم"])
     if not user_list:
         user_list = "هیچ کاربری ثبت نشده"
     
